@@ -1,0 +1,60 @@
+---
+meta:
+    title: 'Что такое функция в Python и как её определить?'
+    description: 'Функция — это именованный блок кода, определяемый через def. Узнайте о параметрах, возвращаемых значениях и значениях по умолчанию.'
+---
+
+> **Функция** — это именованный блок кода, который можно вызывать многократно. Функции помогают избежать дублирования и делают код более читаемым.
+
+## Определение и вызов:
+
+```python
+def greet(name):
+    return f"Привет, {name}!"
+
+message = greet("Анна")
+print(message)  # Привет, Анна!
+```
+
+## Параметры и аргументы:
+
+```python
+# Значения по умолчанию
+def power(base, exponent=2):
+    return base ** exponent
+
+power(3)     # 9  (exponent = 2)
+power(3, 3)  # 27 (exponent = 3)
+```
+
+## Именованные аргументы:
+
+```python
+def create_user(name, age, city="Москва"):
+    return {"name": name, "age": age, "city": city}
+
+# Именованные аргументы можно передавать в любом порядке
+user = create_user(age=25, name="Анна")
+```
+
+## Возврат нескольких значений:
+
+```python
+def min_max(numbers):
+    return min(numbers), max(numbers)
+
+lo, hi = min_max([3, 1, 7, 2, 9])
+print(lo, hi)  # 1 9
+```
+
+## Функция без return:
+
+Если `return` отсутствует, функция возвращает `None`:
+
+```python
+def say_hello(name):
+    print(f"Привет, {name}!")
+
+result = say_hello("Мир")
+print(result)  # None
+```

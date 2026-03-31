@@ -1,0 +1,64 @@
+---
+meta:
+    title: 'Чем отличается многопоточность от многопроцессности в Python?'
+    description: 'threading подходит для I/O задач, multiprocessing — для CPU задач. Узнайте о GIL и выборе подхода к параллелизму в Python.'
+---
+
+## Многопоточность:
+
+Потоки работают в **одном процессе** и разделяют общую память:
+
+```python
+import threading
+
+def download(url):
+    print(f"Скачиваю {url}")
+
+threads = []
+for url in ["url1", "url2", "url3"]:
+    t = threading.Thread(target=download, args=(url,))
+    threads.append(t)
+    t.start()
+
+for t in threads:
+    t.join()  # Ожидание завершения всех потоков
+```
+
+## Многопроцессность:
+
+Каждый процесс имеет **собственную память** и **собственный интерпретатор**:
+
+```python
+from multiprocessing import Process
+
+def heavy_computation(n):
+    return sum(i * i for i in range(n))
+
+processes = []
+for n in [10_000_000, 20_000_000]:
+    p = Process(target=heavy_computation, args=(n,))
+    processes.append(p)
+    p.start()
+
+for p in processes:
+    p.join()
+```
+
+## GIL (Global Interpreter Lock):
+
+GIL — это механизм в CPython, который позволяет **только одному потоку** выполнять Python-код одновременно. Из-за этого:
+
+-   Потоки **не ускоряют** задачи с интенсивными вычислениями (CPU-bound).
+-   Потоки **ускоряют** задачи с ожиданием ввода-вывода (I/O-bound): сетевые запросы, чтение файлов.
+
+## Когда что использовать:
+
+-   **threading** — для I/O-задач: скачивание файлов, API-запросы, работа с БД.
+-   **multiprocessing** — для CPU-задач: обработка данных, вычисления, алгоритмы.
+
+| Критерий | threading | multiprocessing |
+|----------|-----------|----------------|
+| Память   | Общая     | Раздельная     |
+| GIL      | Ограничивает | Не влияет     |
+| Накладные расходы | Низкие | Высокие    |
+| Лучше для | I/O-bound | CPU-bound     |

@@ -1,0 +1,63 @@
+---
+meta:
+    title: 'Что такое аннотации типов в Python?'
+    description: 'Аннотации типов указывают ожидаемые типы данных. Узнайте о синтаксисе, модуле typing и зачем нужны аннотации типов в Python.'
+---
+
+> **Аннотации типов** — это способ указать ожидаемые типы аргументов функций, возвращаемых значений и переменных. Они **не влияют** на выполнение программы, но помогают в разработке.
+
+## Базовый синтаксис:
+
+```python
+def greet(name: str) -> str:
+    return f"Привет, {name}!"
+
+age: int = 25
+price: float = 19.99
+is_active: bool = True
+```
+
+## Коллекции:
+
+```python
+# Python 3.9+
+def process(items: list[str]) -> dict[str, int]:
+    return {item: len(item) for item in items}
+
+# Вложенные типы
+matrix: list[list[int]] = [[1, 2], [3, 4]]
+```
+
+## Модуль typing:
+
+```python
+from typing import Optional, Union
+
+# Может быть str или None
+def find_user(user_id: int) -> Optional[str]:
+    if user_id == 1:
+        return "Анна"
+    return None
+
+# Может быть int или str
+def parse(value: Union[int, str]) -> str:
+    return str(value)
+```
+
+## Зачем нужны аннотации:
+
+-   **Документация**: тип ясен без чтения тела функции.
+-   **IDE**: автодополнение и подсказки работают лучше.
+-   **Поиск ошибок**: инструменты вроде `mypy` находят ошибки типов до запуска кода.
+-   **Командная работа**: упрощают понимание кода другими разработчиками.
+
+## Важно:
+
+Аннотации — это **подсказки**, а не ограничения. Python **не проверяет** типы во время выполнения:
+
+```python
+def add(a: int, b: int) -> int:
+    return a + b
+
+add("hello", " world")  # Сработает без ошибки: "hello world"
+```

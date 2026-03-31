@@ -1,0 +1,55 @@
+---
+meta:
+    title: 'Что такое замыкание в Python?'
+    description: 'Замыкание — это вложенная функция, которая запоминает переменные из внешней области видимости. Узнайте о замыканиях и их применении в Python.'
+---
+
+> **Замыкание** — это вложенная функция, которая «запоминает» переменные из внешней функции, даже после того как внешняя функция завершилась.
+
+## Как это работает:
+
+```python
+def make_multiplier(factor):
+    def multiply(number):
+        return number * factor  # factor «захвачен» из внешней функции
+    return multiply
+
+double = make_multiplier(2)
+triple = make_multiplier(3)
+
+print(double(5))   # 10
+print(triple(5))   # 15
+```
+
+## Условия для замыкания:
+
+-   Есть **вложенная функция**.
+-   Вложенная функция использует переменные из **внешней функции**.
+-   Внешняя функция **возвращает** вложенную функцию.
+
+## Практические примеры:
+
+```python
+# Счётчик
+def make_counter(start=0):
+    count = start
+    def counter():
+        nonlocal count
+        count += 1
+        return count
+    return counter
+
+c = make_counter()
+print(c())  # 1
+print(c())  # 2
+print(c())  # 3
+
+# Логгер
+def make_logger(prefix):
+    def log(message):
+        print(f"[{prefix}] {message}")
+    return log
+
+error_log = make_logger("ERROR")
+error_log("Файл не найден")  # [ERROR] Файл не найден
+```

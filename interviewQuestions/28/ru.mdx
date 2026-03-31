@@ -1,0 +1,71 @@
+---
+meta:
+    title: 'Что такое магические методы?'
+    description: 'Магические методы (__init__, __str__, __repr__, __eq__ и др.) определяют поведение объектов при стандартных операциях в Python.'
+---
+
+> **Магические методы** (от англ. double underscore — двойное подчёркивание) — это специальные методы, которые определяют поведение объектов при стандартных операциях.
+
+## Строковое представление:
+
+```python
+class Product:
+    def __init__(self, name, price):
+        self.name = name
+        self.price = price
+
+    def __str__(self):
+        # Для пользователя (print, str())
+        return f"{self.name}: {self.price} руб."
+
+    def __repr__(self):
+        # Для разработчика (отладка, repr())
+        return f"Product('{self.name}', {self.price})"
+
+p = Product("Книга", 500)
+print(p)       # Книга: 500 руб.
+print(repr(p)) # Product('Книга', 500)
+```
+
+## Сравнение объектов:
+
+```python
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
+    def __lt__(self, other):
+        return (self.x ** 2 + self.y ** 2) < (other.x ** 2 + other.y ** 2)
+
+Point(1, 2) == Point(1, 2)  # True
+Point(1, 2) < Point(3, 4)   # True
+```
+
+## Другие полезные магические методы:
+
+-   `__len__` — поведение `len(obj)`
+-   `__getitem__` — доступ по индексу `obj[key]`
+-   `__contains__` — оператор `in`
+-   `__add__` — оператор `+`
+-   `__call__` — вызов объекта как функции `obj()`
+
+```python
+class Basket:
+    def __init__(self):
+        self.items = []
+
+    def __len__(self):
+        return len(self.items)
+
+    def __contains__(self, item):
+        return item in self.items
+
+basket = Basket()
+basket.items.append("яблоко")
+print(len(basket))           # 1
+print("яблоко" in basket)    # True
+```

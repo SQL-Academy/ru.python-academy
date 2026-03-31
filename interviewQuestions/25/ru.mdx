@@ -1,0 +1,60 @@
+---
+meta:
+    title: 'Что такое инкапсуляция в Python?'
+    description: 'Инкапсуляция ограничивает доступ к внутренним данным объекта. Узнайте о конвенциях _, __, name mangling и @property в Python.'
+---
+
+> **Инкапсуляция** — это принцип ООП, при котором внутренние данные объекта скрываются от прямого доступа извне.
+
+## Конвенции именования:
+
+В Python нет строгих модификаторов доступа (`private`, `public`). Вместо этого используются конвенции:
+
+-   `name` — публичный атрибут, доступен всем.
+-   `_name` — «защищённый» (по конвенции), предназначен для внутреннего использования.
+-   `__name` — «приватный», Python применяет **name mangling** (изменение имени).
+
+```python
+class BankAccount:
+    def __init__(self, balance):
+        self.__balance = balance  # «Приватный» атрибут
+
+    def get_balance(self):
+        return self.__balance
+
+account = BankAccount(1000)
+# print(account.__balance)  # AttributeError
+print(account.get_balance())  # 1000
+
+# Name mangling — атрибут доступен через изменённое имя
+print(account._BankAccount__balance)  # 1000
+```
+
+## @property — управляемый доступ:
+
+Позволяет использовать методы как атрибуты:
+
+```python
+class Temperature:
+    def __init__(self, celsius):
+        self._celsius = celsius
+
+    @property
+    def celsius(self):
+        return self._celsius
+
+    @celsius.setter
+    def celsius(self, value):
+        if value < -273.15:
+            raise ValueError("Ниже абсолютного нуля!")
+        self._celsius = value
+
+    @property
+    def fahrenheit(self):
+        return self._celsius * 9 / 5 + 32
+
+temp = Temperature(25)
+print(temp.celsius)     # 25
+print(temp.fahrenheit)  # 77.0
+temp.celsius = 30       # Использует setter
+```

@@ -1,0 +1,79 @@
+---
+meta:
+    title: 'Что такое наследование и как оно работает в Python?'
+    description: 'Наследование позволяет создавать классы на основе существующих. Узнайте о super(), переопределении методов и множественном наследовании в Python.'
+---
+
+> **Наследование** — это механизм ООП, при котором дочерний класс получает атрибуты и методы родительского класса.
+
+## Базовое наследование:
+
+```python
+class Animal:
+    def __init__(self, name):
+        self.name = name
+
+    def speak(self):
+        return f"{self.name} издаёт звук"
+
+class Dog(Animal):
+    def speak(self):
+        return f"{self.name} говорит: Гав!"
+
+class Cat(Animal):
+    def speak(self):
+        return f"{self.name} говорит: Мяу!"
+
+dog = Dog("Бобик")
+print(dog.speak())  # Бобик говорит: Гав!
+```
+
+## super() — вызов родительского метода:
+
+```python
+class Animal:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+class Dog(Animal):
+    def __init__(self, name, age, breed):
+        super().__init__(name, age)  # Вызов __init__ родителя
+        self.breed = breed
+
+dog = Dog("Бобик", 3, "Лабрадор")
+print(dog.name, dog.breed)  # Бобик Лабрадор
+```
+
+## Проверка наследования:
+
+```python
+print(isinstance(dog, Dog))     # True
+print(isinstance(dog, Animal))  # True
+print(issubclass(Dog, Animal))  # True
+```
+
+## Переопределение методов:
+
+Дочерний класс может заменить или дополнить метод родителя:
+
+```python
+class Shape:
+    def area(self):
+        return 0
+
+class Rectangle(Shape):
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+
+    def area(self):
+        return self.width * self.height
+
+rect = Rectangle(5, 3)
+print(rect.area())  # 15
+```
+
+## Множественное наследование:
+
+Python поддерживает наследование от нескольких классов. Порядок поиска методов определяется алгоритмом MRO (Method Resolution Order), посмотреть его можно через `ClassName.mro()`.

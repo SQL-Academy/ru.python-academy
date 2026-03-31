@@ -1,0 +1,54 @@
+---
+meta:
+    title: 'Что такое статические методы и методы класса?'
+    description: 'Статические методы (@staticmethod) не зависят от экземпляра, методы класса (@classmethod) получают класс первым аргументом. Сравнение в Python.'
+---
+
+## Обычный метод (метод экземпляра):
+
+Получает ссылку на экземпляр (`self`) в качестве первого аргумента:
+
+```python
+class MyClass:
+    def instance_method(self):
+        return f"Вызван для {self}"
+```
+
+## @classmethod — метод класса:
+
+Получает ссылку на **класс** (`cls`) вместо экземпляра:
+
+```python
+class User:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+    @classmethod
+    def from_string(cls, data_string):
+        name, age = data_string.split(",")
+        return cls(name, int(age))
+
+# Альтернативный конструктор
+user = User.from_string("Анна,25")
+print(user.name)  # Анна
+```
+
+## @staticmethod — статический метод:
+
+Не получает ни `self`, ни `cls`. По сути — обычная функция внутри класса:
+
+```python
+class MathUtils:
+    @staticmethod
+    def is_even(n):
+        return n % 2 == 0
+
+print(MathUtils.is_even(4))  # True
+```
+
+## Когда что использовать:
+
+-   **Метод экземпляра** — когда нужен доступ к атрибутам объекта (`self`).
+-   **@classmethod** — для альтернативных конструкторов или работы с атрибутами класса.
+-   **@staticmethod** — для утилитных функций, логически связанных с классом, но не зависящих от экземпляра или класса.

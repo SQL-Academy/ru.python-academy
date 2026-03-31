@@ -1,0 +1,65 @@
+---
+meta:
+    title: 'Как работает импорт модулей в Python?'
+    description: 'Модули в Python импортируются через import и from...import. Узнайте о пакетах, псевдонимах и конструкции __name__ == "__main__".'
+---
+
+> **Модуль** — это файл с расширением `.py`, содержащий Python-код (функции, классы, переменные). Модули позволяют организовать код и переиспользовать его.
+
+## Способы импорта:
+
+```python
+# Импорт всего модуля
+import math
+print(math.sqrt(16))  # 4.0
+
+# Импорт конкретных объектов
+from math import sqrt, pi
+print(sqrt(16))  # 4.0
+
+# Импорт с псевдонимом
+import datetime as dt
+now = dt.datetime.now()
+```
+
+## Свой модуль:
+
+```python
+# utils.py
+def greet(name):
+    return f"Привет, {name}!"
+
+# main.py
+from utils import greet
+print(greet("Мир"))
+```
+
+## \_\_name\_\_ == "\_\_main\_\_":
+
+Позволяет отличить, запущен ли файл напрямую или импортирован как модуль:
+
+```python
+# my_module.py
+def main():
+    print("Запуск модуля напрямую")
+
+if __name__ == "__main__":
+    # Этот код выполнится только при прямом запуске:
+    # python my_module.py
+    main()
+```
+
+## Пакеты:
+
+Пакет — это папка с файлом `__init__.py`, содержащая несколько модулей:
+
+```
+my_package/
+    __init__.py
+    module_a.py
+    module_b.py
+```
+
+```python
+from my_package.module_a import some_function
+```

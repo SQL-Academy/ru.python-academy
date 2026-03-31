@@ -1,0 +1,58 @@
+---
+meta:
+    title: 'Что такое *args и **kwargs?'
+    description: '*args принимает произвольное количество позиционных аргументов, **kwargs — именованных. Узнайте, как использовать распаковку аргументов в Python.'
+---
+
+## *args — произвольное число позиционных аргументов:
+
+Собирает все лишние позиционные аргументы в **кортеж**:
+
+```python
+def total(*args):
+    return sum(args)
+
+total(1, 2, 3)      # 6
+total(10, 20)        # 30
+```
+
+## **kwargs — произвольное число именованных аргументов:
+
+Собирает все лишние именованные аргументы в **словарь**:
+
+```python
+def build_profile(**kwargs):
+    return kwargs
+
+build_profile(name="Анна", age=25, city="Москва")
+# {'name': 'Анна', 'age': 25, 'city': 'Москва'}
+```
+
+## Комбинирование:
+
+Порядок параметров в определении функции строго фиксирован: обычные → `*args` → именованные → `**kwargs`:
+
+```python
+def func(a, b, *args, **kwargs):
+    print(f"a={a}, b={b}")
+    print(f"args={args}")
+    print(f"kwargs={kwargs}")
+
+func(1, 2, 3, 4, x=10, y=20)
+# a=1, b=2
+# args=(3, 4)
+# kwargs={'x': 10, 'y': 20}
+```
+
+## Распаковка при вызове:
+
+```python
+def greet(name, age):
+    print(f"{name}, {age} лет")
+
+args_list = ["Анна", 25]
+greet(*args_list)      # Распаковка списка
+
+kwargs_dict = {"name": "Иван", "age": 30}
+greet(**kwargs_dict)   # Распаковка словаря
+```

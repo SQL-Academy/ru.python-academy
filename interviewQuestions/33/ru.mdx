@@ -1,0 +1,59 @@
+---
+meta:
+    title: 'Как работать с JSON в Python?'
+    description: 'Модуль json позволяет сериализовать и десериализовать данные. Узнайте о json.dumps(), json.loads(), json.dump() и json.load() в Python.'
+---
+
+> **JSON** (JavaScript Object Notation) — это текстовый формат обмена данными. Python предоставляет встроенный модуль `json` для работы с ним.
+
+## Основные функции:
+
+-   `json.dumps()` — Python-объект → JSON-строка
+-   `json.loads()` — JSON-строка → Python-объект
+-   `json.dump()` — Python-объект → JSON-файл
+-   `json.load()` — JSON-файл → Python-объект
+
+## Сериализация (Python → JSON):
+
+```python
+import json
+
+data = {
+    "name": "Анна",
+    "age": 25,
+    "hobbies": ["чтение", "плавание"],
+    "active": True
+}
+
+# В строку
+json_string = json.dumps(data, ensure_ascii=False, indent=2)
+print(json_string)
+
+# В файл
+with open("data.json", "w", encoding="utf-8") as f:
+    json.dump(data, f, ensure_ascii=False, indent=2)
+```
+
+## Десериализация (JSON → Python):
+
+```python
+# Из строки
+json_string = '{"name": "Анна", "age": 25}'
+data = json.loads(json_string)
+print(data["name"])  # Анна
+
+# Из файла
+with open("data.json", "r", encoding="utf-8") as f:
+    data = json.load(f)
+```
+
+## Соответствие типов:
+
+| JSON      | Python  |
+|-----------|---------|
+| object    | dict    |
+| array     | list    |
+| string    | str     |
+| number    | int/float |
+| true/false | True/False |
+| null      | None    |

@@ -1,0 +1,63 @@
+---
+meta:
+    title: 'Что такое абстрактные классы и зачем они нужны?'
+    description: 'Абстрактные классы задают интерфейс через @abstractmethod. Узнайте о модуле abc и создании абстрактных классов в Python.'
+---
+
+> **Абстрактный класс** — это класс, который нельзя создать напрямую. Он задаёт интерфейс (набор обязательных методов) для дочерних классов.
+
+## Модуль abc:
+
+```python
+from abc import ABC, abstractmethod
+
+class Shape(ABC):
+    @abstractmethod
+    def area(self):
+        """Вычислить площадь фигуры"""
+        pass
+
+    @abstractmethod
+    def perimeter(self):
+        """Вычислить периметр фигуры"""
+        pass
+
+# shape = Shape()  # TypeError: нельзя создать экземпляр
+```
+
+## Реализация абстрактного класса:
+
+```python
+class Rectangle(Shape):
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+
+    def area(self):
+        return self.width * self.height
+
+    def perimeter(self):
+        return 2 * (self.width + self.height)
+
+class Circle(Shape):
+    def __init__(self, radius):
+        self.radius = radius
+
+    def area(self):
+        import math
+        return math.pi * self.radius ** 2
+
+    def perimeter(self):
+        import math
+        return 2 * math.pi * self.radius
+
+rect = Rectangle(5, 3)
+print(rect.area())       # 15
+print(rect.perimeter())  # 16
+```
+
+## Зачем нужны:
+
+-   **Контракт**: гарантируют, что дочерний класс реализует все необходимые методы.
+-   **Документация**: явно показывают, какие методы должны быть реализованы.
+-   **Раннее обнаружение ошибок**: если метод не реализован, Python выдаст `TypeError` при создании экземпляра, а не при вызове метода.

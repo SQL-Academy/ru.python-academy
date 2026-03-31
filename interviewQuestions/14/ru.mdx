@@ -1,0 +1,64 @@
+---
+meta:
+    title: 'Что такое области видимости переменных в Python?'
+    description: 'Области видимости в Python определяются правилом LEGB: Local, Enclosing, Global, Built-in. Узнайте о ключевых словах global и nonlocal.'
+---
+
+> В Python область видимости определяет, где переменная доступна. Python использует правило **LEGB** для поиска переменных.
+
+## Правило LEGB:
+
+-   **L — Local**: переменные внутри текущей функции.
+-   **E — Enclosing**: переменные во внешней (вложенной) функции.
+-   **G — Global**: переменные на уровне модуля.
+-   **B — Built-in**: встроенные имена Python (`print`, `len`, `range`).
+
+```python
+x = "глобальная"  # Global
+
+def outer():
+    x = "внешняя"  # Enclosing
+
+    def inner():
+        x = "локальная"  # Local
+        print(x)  # "локальная"
+
+    inner()
+
+outer()
+```
+
+## Ключевое слово global:
+
+Позволяет изменять глобальную переменную внутри функции:
+
+```python
+counter = 0
+
+def increment():
+    global counter
+    counter += 1
+
+increment()
+print(counter)  # 1
+```
+
+## Ключевое слово nonlocal:
+
+Позволяет изменять переменную из внешней функции:
+
+```python
+def outer():
+    count = 0
+
+    def inner():
+        nonlocal count
+        count += 1
+        return count
+
+    return inner
+
+counter = outer()
+print(counter())  # 1
+print(counter())  # 2
+```

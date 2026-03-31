@@ -1,0 +1,70 @@
+---
+meta:
+    title: 'Что такое декораторы и как они работают?'
+    description: 'Декоратор — это функция, оборачивающая другую функцию для добавления поведения. Узнайте о создании декораторов и @wraps в Python.'
+---
+
+> **Декоратор** — это функция, которая принимает другую функцию и возвращает новую, расширяя её поведение без изменения исходного кода.
+
+## Простой декоратор:
+
+```python
+def log_call(func):
+    def wrapper(*args, **kwargs):
+        print(f"Вызов функции: {func.__name__}")
+        result = func(*args, **kwargs)
+        print(f"Результат: {result}")
+        return result
+    return wrapper
+
+@log_call
+def add(a, b):
+    return a + b
+
+add(3, 5)
+# Вызов функции: add
+# Результат: 8
+```
+
+## Как это работает:
+
+```python
+# Запись с @decorator
+@log_call
+def add(a, b):
+    return a + b
+
+# Эквивалентна
+def add(a, b):
+    return a + b
+add = log_call(add)
+```
+
+## Сохранение метаданных (@wraps):
+
+```python
+from functools import wraps
+
+def log_call(func):
+    @wraps(func)  # Сохраняет имя и docstring оригинала
+    def wrapper(*args, **kwargs):
+        print(f"Вызов: {func.__name__}")
+        return func(*args, **kwargs)
+    return wrapper
+
+@log_call
+def add(a, b):
+    """Складывает два числа."""
+    return a + b
+
+print(add.__name__)  # add (без @wraps было бы wrapper)
+print(add.__doc__)   # Складывает два числа.
+```
+
+## Практические примеры декораторов:
+
+-   Логирование вызовов функций
+-   Замер времени выполнения
+-   Кеширование результатов
+-   Проверка прав доступа
+-   Валидация аргументов

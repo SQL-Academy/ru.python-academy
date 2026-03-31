@@ -1,0 +1,58 @@
+---
+meta:
+    title: 'Как создать собственное исключение?'
+    description: 'Пользовательские исключения создаются наследованием от Exception. Узнайте, как и когда создавать свои исключения в Python.'
+---
+
+> Собственные исключения создаются путём наследования от класса `Exception` (или его подклассов).
+
+## Простое пользовательское исключение:
+
+```python
+class InsufficientFundsError(Exception):
+    pass
+
+def withdraw(balance, amount):
+    if amount > balance:
+        raise InsufficientFundsError("Недостаточно средств")
+    return balance - amount
+
+try:
+    withdraw(100, 200)
+except InsufficientFundsError as e:
+    print(e)  # Недостаточно средств
+```
+
+## Исключение с дополнительными данными:
+
+```python
+class ValidationError(Exception):
+    def __init__(self, field, message):
+        self.field = field
+        self.message = message
+        super().__init__(f"{field}: {message}")
+
+try:
+    raise ValidationError("email", "Некорректный формат")
+except ValidationError as e:
+    print(e.field)    # email
+    print(e.message)  # Некорректный формат
+```
+
+## Когда создавать свои исключения:
+
+-   Когда встроенные исключения не описывают ошибку достаточно точно.
+-   Для разделения бизнес-логики ошибок (например, `UserNotFoundError`, `PermissionDeniedError`).
+-   Для удобного перехвата группы связанных ошибок через общий базовый класс.
+
+```python
+class AppError(Exception):
+    """Базовое исключение приложения"""
+    pass
+
+class NotFoundError(AppError):
+    pass
+
+class AccessDeniedError(AppError):
+    pass
+```

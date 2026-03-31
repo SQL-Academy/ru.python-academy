@@ -1,0 +1,58 @@
+---
+meta:
+    title: 'Какие циклы существуют в Python и чем они отличаются?'
+    description: 'В Python есть циклы for и while. Узнайте о break, continue, блоке else у циклов и функции range().'
+---
+
+## Цикл for:
+
+Перебирает элементы **итерируемого объекта** (список, строка, range и др.):
+
+```python
+fruits = ["яблоко", "банан", "вишня"]
+for fruit in fruits:
+    print(fruit)
+
+# Цикл по диапазону чисел
+for i in range(5):
+    print(i)  # 0, 1, 2, 3, 4
+```
+
+## Цикл while:
+
+Выполняется, **пока условие истинно**:
+
+```python
+count = 0
+while count < 3:
+    print(count)
+    count += 1
+```
+
+## Управляющие операторы:
+
+-   `break` — прерывает цикл.
+-   `continue` — переходит к следующей итерации.
+
+```python
+for i in range(10):
+    if i == 3:
+        continue  # Пропускает 3
+    if i == 7:
+        break     # Останавливает цикл на 7
+    print(i)      # 0, 1, 2, 4, 5, 6
+```
+
+## Блок else у цикла:
+
+Выполняется, если цикл завершился **без** `break`:
+
+```python
+for n in range(2, 10):
+    for x in range(2, n):
+        if n % x == 0:
+            break
+    else:
+        # Выполнится, если break не сработал
+        print(f"{n} — простое число")
+```
