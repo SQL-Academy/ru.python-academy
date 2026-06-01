@@ -1,219 +1,176 @@
 # Наследование в Python
 
-> Наследование — это механизм, который позволяет создать новый класс на основе существующего. Дочерний класс получает атрибуты и методы родительского класса, но может расширять и модифицировать эту функциональность.
+В прошлых уроках мы написали класс `Person` — имя, возраст, метод `greet()`. Теперь нужен класс `Student`. У студента есть имя и возраст (то же, что у человека), есть `greet()` (студент тоже умеет здороваться), но дополнительно есть школа и оценки, а здороваться он умеет «по-своему» — с упоминанием школы.
 
-Проще говоря, наследование представляет отношения типа "является" (is-a): собака **является** животным, легковой автомобиль **является** транспортным средством.
+Можно скопировать весь код `Person` в `Student` и дописать новое. Но если потом мы что-то поправим в `Person`, в копии это не обновится. Дублирование кода — это всегда мина с задержкой.
 
-### Зачем нужно наследование?
+Наследование позволяет сказать: «`Student` — это `Person`, плюс ещё кое-что». Не копировать, а **продолжить** существующий класс.
 
--   🔄 **Повторное использование кода** — избавляет от дублирования
--   🌲 **Логические иерархии** — отражает естественные отношения между объектами
--   🧩 **Расширяемость** — легко добавлять новую функциональность
--   🔄 **Полиморфизм** — использовать объекты разных классов единообразно
+## Создание дочернего класса
 
-## Простое наследование в Python
+Чтобы один класс наследовался от другого, имя родителя пишется в скобках после имени дочернего класса:
 
-Создать класс-наследник в Python очень просто — нужно указать родительский класс в скобках:
+```python-executable
+class Person:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
 
-```python
-# Базовый класс
-class Animal:
+    def greet(self):
+        return f"Привет, меня зовут {self.name}, мне {self.age} лет."
+
+class Student(Person):   # Student наследуется от Person
+    pass                  # пока ничего нового не добавляем
+
+# Создаём студента
+student = Student("Анна", 20)
+
+# greet() и атрибуты унаследованы от Person
+print(student.name)
+# Вывод: Анна
+print(student.greet())
+# Вывод: Привет, меня зовут Анна, мне 20 лет.
+```
+
+Мы ни строчки не написали внутри `Student`, но он уже работает — потому что получил `__init__` и `greet()` от `Person`. Это и есть базовое наследование.
+
+## Добавление новых атрибутов и super()
+
+Теперь добавим студенту школу и оценки. Нужно расширить `__init__`: принять и старые параметры (`name`, `age`), и новые (`school`, `grades`). Чтобы не дублировать установку `self.name` и `self.age`, вызовем родительский `__init__` через `super()`:
+
+```python-executable
+class Person:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+    def greet(self):
+        return f"Привет, меня зовут {self.name}, мне {self.age} лет."
+
+class Student(Person):
+    def __init__(self, name, age, school):
+        super().__init__(name, age)   # пусть Person сам установит name и age
+        self.school = school
+        self.grades = []
+
+    def add_grade(self, grade):
+        self.grades.append(grade)
+
+student = Student("Анна", 20, "МГУ")
+student.add_grade(5)
+student.add_grade(4)
+
+print(student.greet())            # унаследованный метод
+# Вывод: Привет, меня зовут Анна, мне 20 лет.
+print(student.school, student.grades)
+# Вывод: МГУ [5, 4]
+```
+
+`super()` это ссылка на «родителя текущего класса». `super().__init__(name, age)` означает «вызови `__init__` от `Person`, передай ему `name` и `age`». Так мы переиспользуем логику родителя вместо того, чтобы копировать её.
+
+## Переопределение методов
+
+Дочерний класс может **переопределить** метод родителя — задать своё поведение под тем же именем. Если в `Student` определён свой `greet()`, Python будет вызывать его, а не родительский:
+
+```python-executable
+class Person:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+    def greet(self):
+        return f"Привет, меня зовут {self.name}."
+
+class Student(Person):
+    def __init__(self, name, age, school):
+        super().__init__(name, age)
+        self.school = school
+
+    def greet(self):
+        # Используем родительский greet() и дописываем своё
+        return f"{super().greet()} Я учусь в {self.school}."
+
+person = Person("Иван", 30)
+student = Student("Анна", 20, "МГУ")
+
+print(person.greet())
+# Вывод: Привет, меня зовут Иван.
+print(student.greet())
+# Вывод: Привет, меня зовут Анна. Я учусь в МГУ.
+```
+
+Внутри переопределённого метода можно вызвать `super().greet()`, чтобы не повторять логику родителя, а только расширить её.
+
+## Многоуровневые иерархии
+
+Наследоваться можно цепочкой: `Student` от `Person`, а `GraduateStudent` от `Student`. Получится цепочка из трёх классов, и потомок будет иметь доступ ко всему, что есть выше:
+
+```python-executable
+class Person:
     def __init__(self, name):
         self.name = name
 
-    def speak(self):
-        return "Звук животного"
+    def greet(self):
+        return f"Привет, я {self.name}."
 
-# Дочерний класс
-class Dog(Animal):  # Dog наследуется от Animal
-    def speak(self):  # Переопределяем метод
-        return f"{self.name} говорит: Гав!"
+class Student(Person):
+    def __init__(self, name, school):
+        super().__init__(name)
+        self.school = school
 
-# Создаем экземпляры
-animal = Animal("Существо")
-dog = Dog("Рекс")
+class GraduateStudent(Student):
+    def __init__(self, name, school, advisor):
+        super().__init__(name, school)
+        self.advisor = advisor
 
-# Вызываем методы
-print(animal.speak())
-print(dog.speak())  # Вызывает переопределенный метод
-print(dog.name)  # Атрибут унаследован от родительского класса
+grad = GraduateStudent("Анна", "МГУ", "Петров И.И.")
+
+# Метод из Person, атрибуты со всех уровней
+print(grad.greet())
+# Вывод: Привет, я Анна.
+print(grad.school, "/", grad.advisor)
+# Вывод: МГУ / Петров И.И.
 ```
 
-## Вызов методов родительского класса с super()
+Когда Python ищет метод или атрибут, он идёт по цепочке: сначала в текущем классе, потом в родителе, потом в родителе родителя — пока не найдёт.
 
-Часто требуется расширить функциональность родительского метода, а не полностью заменить. Для этого используется функция `super()`:
+## Проверка типов: isinstance и issubclass
 
-```python
-class Vehicle:
-    def __init__(self, brand):
-        self.brand = brand
+`isinstance(obj, Class)` проверяет, является ли объект экземпляром класса (или любого его наследника). `issubclass(A, B)` проверяет, является ли класс `A` наследником `B`:
 
-    def info(self):
-        return f"Транспорт марки {self.brand}"
-
-class Car(Vehicle):
-    def __init__(self, brand, model):
-        super().__init__(brand)  # Вызываем конструктор родителя
-        self.model = model
-
-    def info(self):
-        # Расширяем родительский метод
-        return f"{super().info()}, модель {self.model}"
-
-# Создаем автомобиль
-car = Car("Toyota", "Corolla")
-print(car.info())
-```
-
-## Иерархии наследования
-
-Наследование можно выстраивать в многоуровневые иерархии:
-
-```python
-class Animal:
-    def eat(self):
-        return "Животное ест"
-
-class Mammal(Animal):
-    def breathe(self):
-        return "Дышит легкими"
-
-class Dog(Mammal):
-    def bark(self):
-        return "Гав!"
-
-# Создаем собаку
-dog = Dog()
-print(dog.eat())    # Метод из Animal
-print(dog.breathe())  # Метод из Mammal
-print(dog.bark())   # Метод из Dog
-```
-
-## Проверка наследования: isinstance() и issubclass()
-
-Python предоставляет полезные функции для проверки отношений наследования:
-
-```python
-# Базовый класс - родитель в иерархии
-class Vehicle:
-    pass  # Пустой класс для демонстрации наследования
-
-# Дочерние классы - наследуются от Vehicle
-class Car(Vehicle):
-    pass  # Car является разновидностью Vehicle
-
-class Bicycle(Vehicle):
-    pass  # Bicycle тоже является разновидностью Vehicle
-
-# Создаем объекты
-car = Car()  # Экземпляр класса Car
-bicycle = Bicycle()  # Экземпляр класса Bicycle
-
-# Проверяем тип объектов
-# car является экземпляром класса Car?
-print(isinstance(car, Car))
-# car является экземпляром класса Vehicle (через наследование)?
-print(isinstance(car, Vehicle))
-# car является экземпляром класса Bicycle?
-print(isinstance(car, Bicycle))
-
-# Проверяем отношения между классами
-print(issubclass(Car, Vehicle))  # Car является подклассом Vehicle?
-print(issubclass(Vehicle, Car))  # Vehicle является подклассом Car?
-```
-
-## Абстрактные классы
-
-Абстрактные классы служат как шаблоны для создания других классов. Они содержат абстрактные методы, которые должны быть реализованы в подклассах:
-
-```python
-from abc import ABC, abstractmethod
-
-class Shape(ABC):  # Абстрактный класс
-    @abstractmethod
-    def area(self):
-        pass
-
-    @abstractmethod
-    def perimeter(self):
-        pass
-
-class Rectangle(Shape):
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-
-    def area(self):
-        return self.width * self.height
-
-    def perimeter(self):
-        return 2 * (self.width + self.height)
-
-# Попытка создать экземпляр абстрактного класса
-try:
-    shape = Shape()
-except TypeError as e:
-    print(f"Ошибка: {e}")
-
-# Создание экземпляра конкретного класса
-rect = Rectangle(5, 3)
-print(f"Площадь: {rect.area()}")
-print(f"Периметр: {rect.perimeter()}")
-```
-
-## Множественное наследование
-
-Python поддерживает множественное наследование, когда класс наследуется от нескольких родителей:
-
-```python
-class Flying:
-    def fly(self):
-        return "Я могу летать!"
-
-class Swimming:
-    def swim(self):
-        return "Я могу плавать!"
-
-# Множественное наследование
-class Duck(Flying, Swimming):
-    def sound(self):
-        return "Кря!"
-
-# Создаем утку
-duck = Duck()
-print(duck.fly())
-print(duck.swim())
-print(duck.sound())
-```
-
-### Порядок разрешения методов (MRO)
-
-При множественном наследовании важно знать, в каком порядке Python ищет методы в классах. Этот порядок называется Method Resolution Order (MRO):
-
-```python
-class A:
-    def method(self):
-        return "A"
-
-class B(A):
-    def method(self):
-        return "B"
-
-class C(A):
-    def method(self):
-        return "C"
-
-class D(B, C):
+```python-executable
+class Person:
     pass
 
-# Проверяем MRO класса D
-print(D.__mro__)
+class Student(Person):
+    pass
 
-# Создаем объект и вызываем метод
-d = D()
-print(d.method())  # Будет вызван метод из B, так как B стоит перед C
+student = Student()
+
+# Student - это разновидность Person
+print(isinstance(student, Student))
+# Вывод: True
+print(isinstance(student, Person))
+# Вывод: True
+
+# Отношения между классами
+print(issubclass(Student, Person))
+# Вывод: True
+print(issubclass(Person, Student))
+# Вывод: False
 ```
 
-## Проверка понимания
+Главное здесь: студент **является** человеком (`isinstance(student, Person)` это `True`), но человек не обязательно студент. Наследование задаёт отношение «is-a» в одну сторону.
 
-**Что произойдет при вызове метода из дочернего класса, который не переопределяет этот метод родительского класса?**
+## А что насчёт множественного наследования?
+
+Python разрешает классу иметь несколько родителей: `class Duck(Flying, Swimming):`. Это работает, но порядок поиска методов в таких иерархиях быстро становится неочевидным (есть отдельный алгоритм — Method Resolution Order, MRO). На практике для большинства задач хватает одного родителя, и так код легче читать. С множественным наследованием можно разобраться позже, в продвинутом курсе.
+
+## Что дальше?
+
+В следующем уроке возьмём второй принцип ООП — инкапсуляцию: как прятать внутренности класса за интерфейсом и почему это делает код устойчивее к изменениям.
+
+---
+
+**Что произойдёт при вызове метода из дочернего класса, который не переопределяет этот метод родительского класса?**
+

@@ -1,236 +1,162 @@
-# SQLAlchemy Core: современный подход к SQL в Python
+# SQLAlchemy Core: SQL из Python-выражений
 
-Мы изучили основы работы с SQLite через модуль `sqlite3`. Теперь познакомимся с **SQLAlchemy Core** — более мощным и удобным способом работы с базами данных в Python.
+В прошлой статье мы выполняли SQL-запросы через `sqlite3`. Это работает, но есть две проблемы.
 
-## Что такое SQLAlchemy Core?
+**Первая: SQL живёт в строке**, и любая опечатка или неаккуратная вставка пользовательских данных это потенциальная SQL-инъекция. Параметры `?` спасают, но про них нужно помнить каждый раз.
 
-**SQLAlchemy Core** — это Python-библиотека, которая предоставляет элегантный и мощный способ работы с SQL базами данных. Она действует как "умная обертка" над SQL, сохраняя полный контроль над запросами, но делая код более безопасным и переносимым.
+**Вторая: каждая СУБД имеет свой диалект SQL.** Если приложение пишется под SQLite, а потом переезжает на PostgreSQL — почти наверняка часть запросов придётся переписывать.
 
-### Основная идея
+**SQLAlchemy Core** решает обе проблемы: SQL строится из Python-выражений, безопасность встроена по умолчанию, и один и тот же код работает с PostgreSQL, MySQL, SQLite. Простые `SELECT/WHERE` действительно похожи во всех СУБД, но как только заходим в специфические функции (даты, строки, агрегаты) или схему, синтаксис расходится, и Core переводит ваш Python в правильный диалект:
 
-Вместо написания SQL-строк:
-
-```sql
-"SELECT * FROM users WHERE age > 25 AND city = 'Moscow'"
-```
-
-Вы пишете Python-код:
-
-```python
-select(users_table).where(
-    (users_table.c.age > 25) & (users_table.c.city == 'Moscow')
-)
-```
-
-**SQLAlchemy Core автоматически:**
-
--   **Защищает от SQL-инъекций** — параметры экранируются автоматически
--   **Генерирует правильный SQL** для разных баз данных (PostgreSQL, MySQL, SQLite)
--   **Проверяет синтаксис** на этапе написания кода
--   **Обеспечивает автокомплит** в IDE
-
-## Почему SQLAlchemy Core?
-
-**SQLAlchemy Core** решает ключевые проблемы работы с SQL в Python:
-
-### Безопасность из коробки
-
-**Проблема с `sqlite3`:**
-
-```python
-# ОПАСНО! Уязвимость к SQL-инъекциям
-user_input = "'; DROP TABLE users; --"
-cursor.execute(f"SELECT * FROM users WHERE name = '{user_input}'")
-```
-
-**Решение с SQLAlchemy Core:**
-
-```python
-# БЕЗОПАСНО! Автоматическая защита
-select(users_table).where(users_table.c.name == user_input)
-```
-
-### Переносимость между БД
-
-**Проблема:** Разный SQL-синтаксис в разных базах данных.
-
-**Решение:** Один код работает везде:
-
-```python
-# Работает с PostgreSQL, MySQL, SQLite одинаково
-select(users_table).where(users_table.c.age > 25).limit(10)
-```
-
-### Удобство разработки
-
--   **Автокомплит** — IDE подсказывает доступные поля и методы
--   **Проверка ошибок** — синтаксические ошибки видны сразу
--   **Читаемость** — код понятен без знания SQL-диалектов
-
-## Установка SQLAlchemy
+## Установка
 
 ```bash
 pip install sqlalchemy
 ```
 
-Для работы с разными БД нужны дополнительные драйверы, но SQLite работает сразу.
+Для SQLite дополнительных драйверов не нужно. Для PostgreSQL ставится отдельно `psycopg2-binary`, для MySQL — `pymysql`.
 
-## Основные концепции
+## Engine: подключение
 
-### Engine — подключение к БД
+`Engine` это объект, отвечающий за связь с БД. Создаётся один раз на приложение:
 
-```python
+```python-executable
 from sqlalchemy import create_engine
 
-# Создаем подключение к SQLite
 engine = create_engine('sqlite:///tasks.db', echo=True)
-
-print("✅ Подключение создано!")
+print("Engine готов")
+# Вывод: Engine готов
 ```
 
-`echo=True` показывает выполняемые SQL-запросы — удобно для обучения!
+Параметр `echo=True` включает вывод выполняемых SQL-запросов в консоль. Удобно в обучении и при отладке, в production его выключают.
 
-### MetaData и Table — описание структуры
+Строка подключения для других СУБД:
 
-```python
+-   `postgresql://user:pass@host:5432/dbname`
+-   `mysql+pymysql://user:pass@host/dbname`
+-   `sqlite:///file.db`
+
+## Описание таблицы
+
+В Core структура таблицы описывается объектом `Table` — Python-эквивалент SQL-команды `CREATE TABLE`:
+
+```python-executable
 from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Boolean
 
-# Создаем объекты для работы
 engine = create_engine('sqlite:///tasks.db')
 metadata = MetaData()
 
-# Описываем таблицу как Python-объект
 tasks_table = Table(
     'tasks',
     metadata,
     Column('id', Integer, primary_key=True),
     Column('title', String, nullable=False),
-    Column('completed', Boolean, default=False)
+    Column('completed', Boolean, default=False),
 )
 
-# Создаем таблицу в БД
+# Создаём таблицу в БД (если её ещё нет)
 metadata.create_all(engine)
 
-print("✅ Таблица создана!")
+print("Таблица tasks готова")
+# Вывод: Таблица tasks готова
 ```
 
-**Преимущества перед чистым SQL:**
+`MetaData` это коллекция всех `Table`-объектов приложения. `metadata.create_all(engine)` создаёт сразу все таблицы из коллекции, которых ещё нет в БД.
 
--   **Читаемость** — структура таблицы понятна сразу
--   **Автокомплит** — IDE подсказывает поля и методы
--   **Переносимость** — работает с любой СУБД
+## CRUD: четыре операции
 
-## CRUD операции с SQLAlchemy Core
+Для каждой операции в Core есть готовый помощник: `insert()`, `select()`, `update()`, `delete()`. Дальше предполагаем, что `engine` и `tasks_table` уже определены, как выше.
 
-Рассмотрим все основные операции работы с данными в одном примере:
+### INSERT
 
-```python
-from sqlalchemy import (
-    create_engine, MetaData, Table, Column, Integer, String, Boolean,
-    insert, select, update, delete
-)
-
-# === ПОДГОТОВКА ===
-# Создаем подключение к базе данных
-engine = create_engine('sqlite:///tasks.db')
-metadata = MetaData()
-
-# Описываем структуру таблицы
-tasks_table = Table(
-    'tasks', metadata,
-    Column('id', Integer, primary_key=True),
-    Column('title', String, nullable=False),
-    Column('completed', Boolean, default=False)
-)
-
-# Создаем таблицу в базе данных
-metadata.create_all(engine)
+```python-executable
+from sqlalchemy import insert
 
 with engine.connect() as connection:
-
-    # === CREATE: Добавляем новые задачи ===
-    insert_query = insert(tasks_table).values([
-        {'title': 'Изучить SQLAlchemy Core', 'completed': False},
-        {'title': 'Написать приложение', 'completed': False},
-        {'title': 'Протестировать код', 'completed': False}
-    ])
-
-    result = connection.execute(insert_query)
-    print(f"✅ CREATE: Добавлено {result.rowcount} задач")
-
-
-    # === READ: Читаем все задачи ===
-    select_query = select(tasks_table)
-    result = connection.execute(select_query)
-    tasks = result.fetchall()
-
-    print("\n📋 READ: Список всех задач:")
-    for task in tasks:
-        status = "✅" if task.completed else "⏳"
-        print(f"  {task.id}. {status} {task.title}")
-
-
-    # === UPDATE: Отмечаем первую задачу как выполненную ===
-    update_query = update(tasks_table).where(
-        tasks_table.c.id == 1
-    ).values(completed=True)
-
-    result = connection.execute(update_query)
-    print(f"\n🔄 UPDATE: Обновлено {result.rowcount} задач")
-
-
-    # === READ: Проверяем изменения ===
-    result = connection.execute(select_query)
-    tasks = result.fetchall()
-
-    print("\n📋 READ: Обновленный список:")
-    for task in tasks:
-        status = "✅" if task.completed else "⏳"
-        print(f"  {task.id}. {status} {task.title}")
-
-
-    # === DELETE: Удаляем задачу с ID=2 ===
-    delete_query = delete(tasks_table).where(tasks_table.c.id == 2)
-    result = connection.execute(delete_query)
-    print(f"\n🗑️ DELETE: Удалено {result.rowcount} задач")
-
-
-    # === READ: Финальный список ===
-    result = connection.execute(select_query)
-    tasks = result.fetchall()
-
-    print("\n📋 READ: Финальный список:")
-    for task in tasks:
-        status = "✅" if task.completed else "⏳"
-        print(f"  {task.id}. {status} {task.title}")
-
-    # Сохраняем изменения
+    result = connection.execute(
+        insert(tasks_table),
+        [
+            {'title': 'Изучить SQLAlchemy Core', 'completed': False},
+            {'title': 'Написать приложение', 'completed': False},
+            {'title': 'Протестировать код', 'completed': False},
+        ],
+    )
     connection.commit()
 
+print(f"Добавлено строк: {result.rowcount}")
+# Вывод: Добавлено строк: 3
 ```
 
-## Сравнение с чистым SQL
+Значения передаются списком словарей — это batch-вставка одним запросом. SQLAlchemy сам подставит параметры безопасно.
 
-| Аспект            | Чистый SQL            | SQLAlchemy Core       |
-| ----------------- | --------------------- | --------------------- |
-| **Безопасность**  | Нужно помнить про `?` | Автоматическая защита |
-| **Переносимость** | Привязка к одной СУБД | Работает везде        |
-| **Читаемость**    | SQL-строки            | Python-объекты        |
-| **Автокомплит**   | Нет                   | Есть в IDE            |
-| **Сложность**     | Простой для начала    | Чуть сложнее          |
+### SELECT
 
-## Что мы изучили?
+```python-executable
+from sqlalchemy import select
 
-Теперь вы знаете основы SQLAlchemy Core:
+with engine.connect() as connection:
+    result = connection.execute(select(tasks_table))
+    for row in result:
+        print(row.id, row.title, row.completed)
+# Вывод:
+# 1 Изучить SQLAlchemy Core 0
+# 2 Написать приложение 0
+# 3 Протестировать код 0
+```
 
-**Концепции** — Engine, MetaData, Table  
-**CRUD операции** — insert, select, update, delete  
-**Преимущества** — безопасность, переносимость, удобство
+Доступ к колонкам по имени (`row.title`), а не по индексу как в `sqlite3`. Условие фильтрации добавляется через `.where()`:
 
-Это мощная основа для работы с любыми базами данных в Python!
+```python-executable
+from sqlalchemy import select
+
+with engine.connect() as connection:
+    result = connection.execute(
+        select(tasks_table).where(tasks_table.c.id == 1)
+    )
+    row = result.first()
+    print(row.title)
+# Вывод: Изучить SQLAlchemy Core
+```
+
+`tasks_table.c.id` это «колонка `id` таблицы `tasks`». Сравнения (`==`, `>`, `<`, `.in_()`, `.like()`) превращаются в SQL автоматически.
+
+### UPDATE
+
+```python-executable
+from sqlalchemy import update
+
+with engine.connect() as connection:
+    result = connection.execute(
+        update(tasks_table)
+        .where(tasks_table.c.id == 1)
+        .values(completed=True)
+    )
+    connection.commit()
+
+print(f"Обновлено строк: {result.rowcount}")
+# Вывод: Обновлено строк: 1
+```
+
+### DELETE
+
+```python-executable
+from sqlalchemy import delete
+
+with engine.connect() as connection:
+    result = connection.execute(
+        delete(tasks_table).where(tasks_table.c.id == 3)
+    )
+    connection.commit()
+
+print(f"Удалено строк: {result.rowcount}")
+# Вывод: Удалено строк: 1
+```
 
 ## Что дальше?
 
-В следующей статье мы изучим **SQLAlchemy ORM** — еще более высокоуровневый подход, где таблицы становятся Python-классами, а записи — объектами. Это делает работу с данными максимально удобной.
+В следующей статье возьмём **SQLAlchemy ORM** — слой выше Core, где таблицы становятся Python-классами, строки — объектами, и вам почти не нужно думать в терминах SQL. Хорошо подходит для типичной бизнес-логики; Core остаётся в арсенале для случаев, когда нужен точный контроль над запросом.
 
-**Главное преимущество SQLAlchemy Core перед чистым SQL?**
+---
+
+**Главное преимущество SQLAlchemy Core перед сырыми SQL-строками в `sqlite3`?**
+

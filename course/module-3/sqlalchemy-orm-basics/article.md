@@ -1,260 +1,231 @@
-# SQLAlchemy ORM: объектно-реляционное отображение в Python
+# SQLAlchemy ORM: работа с БД через Python-объекты
 
-Мы изучили SQLAlchemy Core — мощный способ работы с SQL через Python-код. Теперь познакомимся с **SQLAlchemy ORM** — еще более удобным подходом, где таблицы базы данных становятся Python-классами, а записи — объектами.
+В Core мы строили SQL из Python-выражений: `select(tasks).where(tasks.c.id == 1)`. Это уже сильно лучше сырых SQL-строк, но в коде всё равно остаются «таблица + колонка», а не привычные объекты.
 
-## Что такое ORM?
+**ORM** (Object-Relational Mapping) идёт на шаг дальше: таблица описывается как Python-класс, строка таблицы это экземпляр этого класса, а изменение атрибута объекта автоматически отражается в БД. Получается работа с БД на языке обычных Python-объектов.
 
-**ORM (Object-Relational Mapping)** — это технология, которая связывает объекты в коде с записями в базе данных. Вместо написания SQL-запросов, вы работаете с обычными Python-объектами.
+## Модель: класс как таблица
 
-### Основная идея
+В SQLAlchemy 2.0+ модели описываются через `DeclarativeBase` с аннотациями типов. Это современный стиль, который заменяет старый `declarative_base()`:
 
-**Без ORM (SQLAlchemy Core):**
-
-```python
-# Создаем SQL-запрос для получения пользователя
-select_query = select(users_table).where(users_table.c.id == 1)
-result = connection.execute(select_query)
-user_row = result.fetchone()
-print(user_row.name)  # Работаем с Row объектом
-```
-
-**С ORM:**
-
-```python
-# Работаем с Python-объектом напрямую
-user = session.get(User, 1)  # User - это Python класс
-print(user.name)  # Обращаемся к атрибуту объекта
-user.email = "new@email.com"  # Изменяем как обычный объект
-session.commit()  # Сохраняем изменения
-```
-
-### Преимущества ORM
-
--   **Pythonic код** — работаете с объектами, а не со строками SQL
--   **Автоматическое отслеживание изменений** — ORM сам знает что нужно сохранить
--   **Простые связи между таблицами** — `user.posts` вместо JOIN запросов
--   **Валидация данных** — проверки на уровне Python-классов
-
-## Почему сначала Core, потом ORM?
-
-**Понимание основ** — Core показал как работают SQL-запросы под капотом  
-**Контроль** — иногда нужен точный контроль над SQL  
-**Отладка** — зная Core, легче понять что делает ORM  
-**Выбор инструмента** — для каждой задачи подходящий уровень абстракции
-
-## Установка и настройка
-
-ORM входит в основной пакет SQLAlchemy:
-
-```bash
-pip install sqlalchemy
-```
-
-## Создание моделей
-
-В ORM таблицы описываются как Python-классы. Начнем с простого примера:
-
-### Шаг 1: Базовая настройка
-
-```python
+```python-executable
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-# Базовый класс для всех моделей
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
-# Подключение к базе данных
-engine = create_engine('sqlite:///orm_tasks.db')
-
-print("✅ Базовая настройка готова!")
-
-```
-
-### Шаг 2: Создание модели
-
-```python
-from sqlalchemy import Column, Integer, String, Boolean
-
-# Модель = Python-класс = таблица в БД
 class Task(Base):
-    __tablename__ = 'tasks'  # Имя таблицы
+    __tablename__ = 'tasks'
 
-    # Поля таблицы как атрибуты класса
-    id = Column(Integer, primary_key=True)
-    title = Column(String, nullable=False)
-    completed = Column(Boolean, default=False)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str]
+    completed: Mapped[bool] = mapped_column(default=False)
 
-    # Красивое отображение объекта
     def __repr__(self):
-        status = "✅" if self.completed else "⏳"
-        return f"<Task: {status} {self.title}>"
+        return f"Task(id={self.id}, title={self.title!r}, completed={self.completed})"
 
-print("✅ Модель Task создана!")
-
-```
-
-### Шаг 3: Создание таблицы и сессии
-
-```python
-# Создаем таблицу в базе данных
+engine = create_engine('sqlite:///orm_tasks.db')
 Base.metadata.create_all(engine)
 
-# Создаем сессию для работы с данными
-Session = sessionmaker(bind=engine)
-session = Session()
-
-print("✅ Таблица создана, сессия готова!")
-
+print("Модель Task и таблица tasks готовы")
+# Вывод: Модель Task и таблица tasks готовы
 ```
 
-## CRUD операции через ORM
+Как это читать:
 
-Теперь изучим основные операции с данными. Каждая операция в отдельном примере:
+-   `class Task(Base)` — модель, наследник базового класса
+-   `__tablename__ = 'tasks'` — имя таблицы в БД
+-   `id: Mapped[int] = mapped_column(primary_key=True)` — колонка `id`, тип int, первичный ключ
+-   `title: Mapped[str]` — колонка `title`, тип str, NOT NULL по умолчанию
+-   `completed: Mapped[bool] = mapped_column(default=False)` — колонка `completed`, тип bool, по умолчанию `False`
 
-### CREATE: Создание объектов
+Типы Python (`int`, `str`, `bool`) автоматически отображаются в SQL-типы (`INTEGER`, `VARCHAR`, `BOOLEAN`). Никаких отдельных `Column(Integer, ...)` как в Core.
 
-```python
-# Создаем объекты как обычные Python-экземпляры
-task1 = Task(title="Изучить ORM")
-task2 = Task(title="Написать код")
+## Session: единица работы
 
-# Добавляем в сессию и сохраняем
-session.add_all([task1, task2])
-session.commit()
+Для запросов в ORM используется `Session`. Это «единица работы»: она держит загруженные объекты в памяти, отслеживает изменения и одной командой сохраняет всё в БД.
 
-print("✅ CREATE: Созданы задачи:")
-print(f"  {task1}")
-print(f"  {task2}")
+```python-executable
+from sqlalchemy.orm import Session
 
+with Session(engine) as session:
+    # ... здесь работаем с объектами
+    session.commit()
+
+print("Сессия закрыта")
+# Вывод: Сессия закрыта
 ```
 
-### READ: Чтение данных
+`with Session(...)` сам закроет сессию по выходу. `commit()` сохраняет накопленные изменения в БД.
 
-```python
-# Получить все задачи
-all_tasks = session.query(Task).all()
-print("📋 READ: Все задачи:")
-for task in all_tasks:
-    print(f"  {task}")
+## CRUD через объекты
 
+Дальше предполагаем, что `engine` и класс `Task` уже определены.
+
+### CREATE: создание
+
+```python-executable
+from sqlalchemy.orm import Session
+
+with Session(engine) as session:
+    task1 = Task(title="Изучить ORM")
+    task2 = Task(title="Написать код")
+    session.add_all([task1, task2])
+    session.commit()
+    print(task1)
+    print(task2)
+# Вывод:
+# Task(id=1, title='Изучить ORM', completed=False)
+# Task(id=2, title='Написать код', completed=False)
 ```
 
-```python
-# Получить конкретную задачу по ID
-task = session.get(Task, 1)
-print(f"🎯 Задача с ID=1: {task}")
+Заметьте: `task1.id` после `commit()` уже заполнен. БД назначила его автоматически.
 
+### READ: чтение
+
+В современном SQLAlchemy 2.0 запросы пишутся через `select()` + `session.execute()`. Старый `session.query(...)` ещё работает, но считается устаревшим.
+
+```python-executable
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+with Session(engine) as session:
+    # Все строки
+    tasks = session.execute(select(Task)).scalars().all()
+    for task in tasks:
+        print(task)
+# Вывод:
+# Task(id=1, title='Изучить ORM', completed=False)
+# Task(id=2, title='Написать код', completed=False)
 ```
 
-### UPDATE: Обновление объектов
+`.scalars()` нужен потому что `select(Task)` возвращает строки-кортежи (даже если в каждом кортеже один элемент). `.scalars()` распаковывает их в объекты `Task`.
 
-```python
-# Просто меняем атрибут объекта!
-task = session.get(Task, 1)
-task.completed = True
-task.title = "Изучить ORM ✨"
+Получить одну запись по первичному ключу проще через `session.get`:
 
-# Сохраняем изменения
-session.commit()
+```python-executable
+from sqlalchemy.orm import Session
 
-print(f"🔄 UPDATE: {task}")
-
+with Session(engine) as session:
+    task = session.get(Task, 1)
+    print(task)
+# Вывод: Task(id=1, title='Изучить ORM', completed=False)
 ```
 
-### DELETE: Удаление объектов
+С фильтром:
 
-```python
-# Находим и удаляем задачу
-task_to_delete = session.get(Task, 2)
-session.delete(task_to_delete)
-session.commit()
+```python-executable
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-print(f"🗑️ DELETE: Удалена задача")
-
-
-# Проверяем что осталось
-remaining_tasks = session.query(Task).all()
-print(f"📋 Осталось задач: {len(remaining_tasks)}")
-for task in remaining_tasks:
-    print(f"  {task}")
-
+with Session(engine) as session:
+    stmt = select(Task).where(Task.completed == False)
+    pending = session.execute(stmt).scalars().all()
+    for task in pending:
+        print(task)
+# Вывод:
+# Task(id=1, title='Изучить ORM', completed=False)
+# Task(id=2, title='Написать код', completed=False)
 ```
 
-### Главные преимущества ORM
+### UPDATE: изменение
 
--   **Простота** — работаете с объектами как обычно в Python
--   **Автоматизация** — ORM сам отслеживает изменения
--   **Безопасность** — защита от SQL-инъекций из коробки
--   **Читаемость** — код понятен без знания SQL
+Самая удобная часть ORM: меняем атрибут объекта, и Session сам понимает что нужно обновить:
 
-## Отношения между таблицами
+```python-executable
+from sqlalchemy.orm import Session
 
-ORM позволяет легко связывать таблицы. Покажем на простом примере:
+with Session(engine) as session:
+    task = session.get(Task, 1)
+    task.completed = True
+    session.commit()
+    print(task)
+# Вывод: Task(id=1, title='Изучить ORM', completed=True)
+```
 
-```python
+Никаких явных `UPDATE ... SET ... WHERE ...`. Session отслеживает изменённые атрибуты и при `commit()` отправляет нужный SQL.
+
+### DELETE: удаление
+
+```python-executable
+from sqlalchemy.orm import Session
+
+with Session(engine) as session:
+    task = session.get(Task, 2)
+    session.delete(task)
+    session.commit()
+    print("Задача удалена")
+# Вывод: Задача удалена
+```
+
+## Связи между таблицами
+
+В реальных схемах таблицы связаны: у пользователя есть задачи, у поста комментарии. ORM описывает связи через `relationship`, и обращение к связанным записям выглядит как обращение к обычному атрибуту:
+
+```python-executable
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session
+from sqlalchemy import create_engine
+from typing import List
 
-# Пользователь (один) → Задачи (много)
+class Base(DeclarativeBase):
+    pass
+
 class User(Base):
     __tablename__ = 'users'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str]
+    tasks: Mapped[List["UserTask"]] = relationship(back_populates="user")
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False)
-
-    # Связь с задачами
-    tasks = relationship("UserTask")
-
-# Задача принадлежит пользователю
 class UserTask(Base):
     __tablename__ = 'user_tasks'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str]
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    user: Mapped["User"] = relationship(back_populates="tasks")
 
-    id = Column(Integer, primary_key=True)
-    title = Column(String, nullable=False)
-    user_id = Column(Integer, ForeignKey('users.id'))
-
-# Создаем таблицы и данные
+engine = create_engine('sqlite:///orm_users.db')
 Base.metadata.create_all(engine)
-session = Session()
 
-user = User(name="Анна")
-task1 = UserTask(title="Изучить Python", user_id=1)
-task2 = UserTask(title="Написать код", user_id=1)
+with Session(engine) as session:
+    anna = User(name="Анна", tasks=[
+        UserTask(title="Изучить Python"),
+        UserTask(title="Написать код"),
+    ])
+    session.add(anna)
+    session.commit()
 
-session.add_all([user, task1, task2])
-session.commit()
-
-# Магия ORM: получаем связанные объекты
-print(f"👤 Пользователь: {user.name}")
-print(f"📋 Задач: {len(user.tasks)}")
-for task in user.tasks:
-    print(f"  - {task.title}")
-
-session.close()
-
+    user = session.get(User, anna.id)
+    print(user.name)
+    for task in user.tasks:
+        print(f"  {task.title}")
+# Вывод:
+# Анна
+#   Изучить Python
+#   Написать код
 ```
 
-**Главное преимущество:** `user.tasks` автоматически получает связанные записи без написания JOIN запросов!
+`user.tasks` за кулисами выполняет SQL-запрос `SELECT ... FROM user_tasks WHERE user_id = ?`, но в коде это выглядит как обычный доступ к атрибуту. Это и есть главный комфорт ORM: реляционная связь читается как «у пользователя есть задачи».
 
-## Сравнение подходов
+## Сравнение трёх подходов
 
-| Аспект                 | Чистый SQL      | SQLAlchemy Core     | SQLAlchemy ORM      |
-| ---------------------- | --------------- | ------------------- | ------------------- |
-| **Синтаксис**          | SQL строки      | Python-функции      | Python-объекты      |
-| **Безопасность**       | Ручная          | Автоматическая      | Автоматическая      |
-| **Связи таблиц**       | JOIN запросы    | Сложные выражения   | `user.tasks`        |
-| **Изменения**          | UPDATE SQL      | `update().values()` | `obj.field = value` |
-| **Кривая обучения**    | Нужно знать SQL | Средняя             | Простая для начала  |
-| **Производительность** | Максимальная    | Высокая             | Хорошая             |
+| Аспект                | sqlite3                | SQLAlchemy Core        | SQLAlchemy ORM       |
+| --------------------- | ---------------------- | ---------------------- | -------------------- |
+| Запрос                | SQL-строка             | Python-выражение       | Python-объект        |
+| Защита от инъекций    | через `?` вручную      | автоматически          | автоматически        |
+| Переносимость между БД | нет                    | есть                   | есть                 |
+| Связи                 | JOIN вручную           | JOIN-выражения         | `user.tasks`         |
+| UPDATE                | `UPDATE ... SET ...`   | `update().values(...)` | `obj.field = ...`    |
+| Контроль над SQL      | максимальный           | высокий                | средний              |
 
-## Что мы изучили?
+Хорошее правило: ORM для типичной бизнес-логики, Core для сложных запросов где нужен контроль, raw SQL только когда первые два не справляются.
 
-Теперь вы знаете основы SQLAlchemy ORM:
+## Что дальше?
 
-**Концепция ORM** — объекты вместо SQL  
-**Создание моделей** — классы как таблицы  
-**CRUD через объекты** — интуитивные операции  
-**Связи между таблицами** — простая работа с отношениями
+ORM это инструмент, который оптимизирует **типичные** случаи работы с БД. Если в проекте 95% запросов это «получи объект, поменяй поле, сохрани», ORM экономит кучу времени. Когда упираетесь в сложный запрос или performance-критичный путь, спускайтесь в Core или пишите SQL напрямую. Эти три уровня дополняют друг друга.
+
+---
 
 **Главное преимущество ORM перед Core?**
+
